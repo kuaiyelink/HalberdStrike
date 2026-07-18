@@ -1,0 +1,40 @@
+llm:
+  provider: openai
+  api_key: sk-5fe418c73a9347c6b8194c94c6d48989
+  base_url: https://api.deepseek.com/v1
+  model: deepseek-v4-pro
+  temperature: 0.3
+  max_tokens: 4096
+  context_window: 128000
+  ollama:
+    base_url: http://localhost:11434
+    model: qwen2.5:32b
+execution:
+  default_timeout: 500
+  max_timeout: 600
+  max_retries: 3
+  auto_approve_risk_levels:
+  - low
+  - medium
+  - high
+  max_consecutive_failures: 3
+  parallel_workers: 2
+security:
+  blocked_commands:
+  - rm -rf
+  - dd if=
+  - mkfs
+  - shutdown
+  - reboot
+  - ':(){ :|:& };:'
+  max_output_size: 1048576
+  network_scope_enforcement: false
+storage:
+  database_path: ./data/halberdstrike.db
+  projects_dir: ./data/projects
+  logs_dir: ./data/logs
+  reports_dir: ./data/reports
+logging:
+  level: INFO
+  file: ./data/logs/halberdstrike.log
+  console: true

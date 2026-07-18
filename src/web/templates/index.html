@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HalberdStrike 控制台</title>
+    <script>
+        document.documentElement.lang = 'zh-CN';
+        document.title = 'HalberdStrike 控制台';
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/chart.umd.min.js"></script>
+</head>
+<body data-lang="zh" data-bg-mode="cyber">
+
+<!-- ── 顶部导航 ── -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="brand-stack">
+            <span id="brandTitle">HALBERDSTRIKE</span>
+            <span class="brand-subtitle" data-i18n-zh="网络攻防指挥中心" data-i18n-en="OFFENSIVE SECURITY COMMAND">网络攻防指挥中心</span>
+        </div>
+        <a href="https://github.com" target="_blank" rel="noopener" style="color:var(--accent-cyan);font-size:10px;margin-left:8px;opacity:0.7;text-decoration:none;letter-spacing:0.5px;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">GitHub</a>
+    </div>
+    <div class="navbar-center">
+        <span class="nav-chip nav-chip-live" data-i18n-zh="在线" data-i18n-en="LIVE">在线</span>
+        <span id="navTime">--:--:--</span>
+    </div>
+    <div class="navbar-monitor">
+        <div class="sys-stat" title="CPU Usage" data-i18n-title-zh="CPU 使用率" data-i18n-title-en="CPU Usage">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <span class="sys-label" data-i18n-zh="CPU" data-i18n-en="CPU">CPU</span>
+            <span id="sysCpu" class="sys-val">--%</span>
+            <div class="sys-bar"><div id="sysCpuBar" class="sys-bar-fill cpu-bar"></div></div>
+        </div>
+        <div class="sys-stat" title="Memory Usage" data-i18n-title-zh="内存使用率" data-i18n-title-en="Memory Usage">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/><line x1="14" y1="10" x2="14" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>
+            <span class="sys-label" data-i18n-zh="内存" data-i18n-en="MEM">内存</span>
+            <span id="sysMem" class="sys-val">--% <small id="sysMemDetail"></small></span>
+            <div class="sys-bar"><div id="sysMemBar" class="sys-bar-fill mem-bar"></div></div>
+        </div>
+        <div class="sys-stat" title="Network I/O" data-i18n-title-zh="网络 I/O" data-i18n-title-en="Network I/O">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span class="sys-label" data-i18n-zh="网络" data-i18n-en="NET">网络</span>
+            <span id="sysNet" class="sys-val">↑--  ↓--</span>
+        </div>
+    </div>
+    <div class="navbar-status">
+        <button type="button" class="btn" id="bgModeBtn" onclick="cycleBgMode()" style="margin-right:8px;padding:6px 10px;min-width:88px" title="切换背景主题" data-i18n-title-zh="切换背景主题" data-i18n-title-en="Background theme">背景</button>
+        <button class="btn" id="langToggleBtn" onclick="toggleLanguage()" style="margin-right:8px;padding:6px 10px;min-width:72px">中文</button>
+        <span id="statusBadge" class="status-badge stopped">OFFLINE</span>
+        <div id="connectionDot" class="connection-dot disconnected" title="SSE 连接" data-i18n-title-zh="SSE 连接" data-i18n-title-en="SSE"></div>
+    </div>
+</nav>
+
+<!-- ── 主内容区 ── -->
+<div class="main-content">
+    <!-- 控制栏 -->
+    <div class="control-bar">
+        <div class="hud-corner hud-corner-tl"></div>
+        <div class="hud-corner hud-corner-tr"></div>
+        <div class="hud-corner hud-corner-bl"></div>
+        <div class="hud-corner hud-corner-br"></div>
+        <div class="control-scanline"></div>
+        <div class="project-info">
+            <div><span class="label" data-i18n-zh="项目 " data-i18n-en="Project ">项目 </span><span class="value" id="projectName">--</span></div>
+            <div><span class="label" data-i18n-zh="目标 " data-i18n-en="Target ">目标 </span><span class="value" id="projectTarget">--</span></div>
+            <div><span class="label" data-i18n-zh="失败 " data-i18n-en="Failures ">失败 </span><span class="value" id="failureCount" style="color:var(--accent-red)">0</span></div>
+        </div>
+        <div class="control-buttons">
+            <!-- projects: 项目管理 -->
+            <button class="btn" onclick="openProjectsModal()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span data-i18n-zh="项目管理" data-i18n-en="Projects">项目管理</span>
+            </button>
+            <!-- start: 开始渗透测试 -->
+            <button class="btn btn-cyan" onclick="startCurrentScan()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+                <span data-i18n-zh="开始" data-i18n-en="Start">开始</span>
+            </button>
+            <!-- resume: 恢复执行 -->
+            <button class="btn btn-green" onclick="control('resume')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span data-i18n-zh="恢复" data-i18n-en="Resume">恢复</span>
+            </button>
+            <!-- pause: 暂停执行 -->
+            <button class="btn btn-yellow" onclick="control('pause')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                <span data-i18n-zh="暂停" data-i18n-en="Pause">暂停</span>
+            </button>
+            <!-- stop: 停止执行 -->
+            <button class="btn btn-red" onclick="control('stop')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                <span data-i18n-zh="停止" data-i18n-en="Stop">停止</span>
+            </button>
+            <div class="control-sep"></div>
+            <!-- report: 生成报告 -->
+            <button class="btn" id="btnGenReport" onclick="generateCurrentReport()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span id="btnGenReportText" data-i18n-zh="报告" data-i18n-en="REPORT">报告</span>
+            </button>
+            <!-- reports: 查看所有报告 -->
+            <button class="btn" onclick="openReportsModal()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span data-i18n-zh="报告列表" data-i18n-en="Reports">报告列表</span>
+            </button>
+            <!-- tree: 刷新任务树 -->
+            <button class="btn" onclick="refreshAll()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <span data-i18n-zh="刷新" data-i18n-en="Refresh">刷新</span>
+            </button>
+            <div class="control-sep"></div>
+            <!-- settings: 配置管理 -->
+            <button class="btn" onclick="openSettingsModal()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span data-i18n-zh="设置" data-i18n-en="Settings">设置</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 主任务进度（LLM 阶段 + 迭代 + 子进程进度） -->
+    <div class="run-progress-strip" id="runProgressStrip">
+        <div class="run-progress-inner">
+            <span class="run-pulse" id="runPulse" aria-hidden="true"></span>
+            <div class="run-progress-text">
+                <span class="run-phase" id="runPhaseLabel">—</span>
+                <span class="run-detail" id="runDetailText"></span>
+            </div>
+            <div class="run-iter-wrap" title="" id="runIterWrap">
+                <div class="run-iter-bar"><div class="run-iter-fill" id="runIterFill"></div></div>
+                <span class="run-iter-label" id="runIterLabel"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片行 -->
+    <div class="stats-row">
+        <div class="stat-card green"><div class="stat-kicker">RUN</div><div class="stat-value green" id="statCompleted">0</div><div class="stat-label" data-i18n-zh="已完成" data-i18n-en="Completed">已完成</div></div>
+        <div class="stat-card yellow"><div class="stat-kicker">OPS</div><div class="stat-value yellow" id="statRunning">0</div><div class="stat-label" data-i18n-zh="进行中" data-i18n-en="In Progress">进行中</div></div>
+        <div class="stat-card red"><div class="stat-kicker">ERR</div><div class="stat-value red" id="statFailed">0</div><div class="stat-label" data-i18n-zh="失败" data-i18n-en="Failed">失败</div></div>
+        <div class="stat-card blue"><div class="stat-kicker">INTEL</div><div class="stat-value blue" id="statFindings">0</div><div class="stat-label" data-i18n-zh="发现" data-i18n-en="Findings">发现</div></div>
+        <div class="stat-card purple"><div class="stat-kicker">LOG</div><div class="stat-value purple" id="statLogs">0</div><div class="stat-label" data-i18n-zh="操作" data-i18n-en="Actions">操作</div></div>
+        <div class="stat-card cyan"><div class="stat-kicker">QUEUE</div><div class="stat-value cyan" id="statPending">0</div><div class="stat-label" data-i18n-zh="待处理" data-i18n-en="Pending">待处理</div></div>
+    </div>
+
+    <section class="ops-column left-column">
+        <!-- 实时进度 -->
+        <div class="card mission-card">
+            <div class="card-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span data-i18n-zh="实时进度" data-i18n-en="Live Progress">实时进度</span>
+                </h3>
+            </div>
+            <div class="card-body" id="progressList">
+                <div class="empty-state">等待命令中...</div>
+            </div>
+        </div>
+
+        <!-- 图表网格 -->
+        <div class="charts-grid intel-grid">
+            <div class="chart-wrap">
+                <div class="chart-title" data-i18n-zh="严重级别分布" data-i18n-en="Severity Distribution">严重级别分布</div>
+                <div class="chart-canvas-wrap"><canvas id="chartSeverity"></canvas></div>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-title" data-i18n-zh="任务状态" data-i18n-en="Task Status">任务状态</div>
+                <div class="chart-canvas-wrap"><canvas id="chartTaskStatus"></canvas></div>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-title" data-i18n-zh="风险等级" data-i18n-en="Risk Level">风险等级</div>
+                <div class="chart-canvas-wrap"><canvas id="chartRisk"></canvas></div>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-title" data-i18n-zh="LLM Token 统计" data-i18n-en="LLM Token Stats">LLM Token 统计</div>
+                <div class="token-stats-panel" id="tokenStatsPanel">
+                    <div class="token-stat-row">
+                        <span class="ts-label" data-i18n-zh="提示词 Tokens" data-i18n-en="Prompt Tokens">提示词 Tokens</span>
+                        <span class="ts-value" id="tsPrompt">0</span>
+                    </div>
+                    <div class="token-stat-row">
+                        <span class="ts-label" data-i18n-zh="输出 Tokens" data-i18n-en="Completion Tokens">输出 Tokens</span>
+                        <span class="ts-value" id="tsCompletion">0</span>
+                    </div>
+                    <div class="token-stat-row accent">
+                        <span class="ts-label" data-i18n-zh="总 Tokens" data-i18n-en="Total Tokens">总 Tokens</span>
+                        <span class="ts-value" id="tsTotal">0</span>
+                    </div>
+                    <div class="token-stat-row">
+                        <span class="ts-label" data-i18n-zh="请求次数" data-i18n-en="Requests">请求次数</span>
+                        <span class="ts-value" id="tsRequests">0</span>
+                    </div>
+                    <div class="token-stat-row warn">
+                        <span class="ts-label" data-i18n-zh="失败 / 重试" data-i18n-en="Failed / Retries">失败 / 重试</span>
+                        <span class="ts-value"><span id="tsFailed">0</span> / <span id="tsRetries">0</span></span>
+                    </div>
+                    <div class="token-stat-row">
+                        <span class="ts-label" data-i18n-zh="平均延迟" data-i18n-en="Avg Latency">平均延迟</span>
+                        <span class="ts-value" id="tsLatency">0s</span>
+                    </div>
+                    <div class="token-stat-bar-wrap">
+                        <div class="token-stat-bar">
+                            <div class="tsb-prompt" id="tsbPrompt" style="width:50%"></div>
+                            <div class="tsb-completion" id="tsbCompletion" style="width:50%"></div>
+                        </div>
+                        <div class="tsb-legend">
+                            <span class="tsb-leg-item" data-i18n-zh="提示词" data-i18n-en="Prompt"><i style="background:var(--accent-cyan)"></i>提示词</span>
+                            <span class="tsb-leg-item" data-i18n-zh="输出" data-i18n-en="Completion"><i style="background:var(--accent-green)"></i>输出</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="ops-column center-column">
+        <!-- PTT 任务树 -->
+        <div class="card tree-card">
+            <div class="card-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <span data-i18n-zh="任务树" data-i18n-en="Task Tree">任务树</span>
+                </h3>
+            </div>
+            <div class="card-body tree-root" id="treeContainer">
+                <div class="empty-state">初始化中...</div>
+            </div>
+        </div>
+
+        <!-- 执行时间线图表 -->
+        <div class="chart-wrap timeline-card">
+            <div class="chart-title" data-i18n-zh="执行时间线（耗时）" data-i18n-en="Execution Timeline (Duration)">执行时间线（耗时）</div>
+            <div class="chart-canvas-wrap" style="height:170px"><canvas id="chartTimeline"></canvas></div>
+        </div>
+    </section>
+
+    <section class="ops-column right-column">
+        <!-- 发现 -->
+        <div class="card findings-card">
+            <div class="card-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span data-i18n-zh="发现列表" data-i18n-en="Findings">发现列表</span>
+                </h3>
+                <span class="badge" id="findingsCount">0</span>
+            </div>
+            <div class="card-body" id="findingsList">
+                <div class="empty-state">暂无发现</div>
+            </div>
+        </div>
+
+        <!-- 操作日志 -->
+        <div class="card logs-card">
+            <div class="card-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    <span data-i18n-zh="操作日志" data-i18n-en="Action Log">操作日志</span>
+                </h3>
+            </div>
+            <div class="card-body" id="logsList">
+                <div class="empty-state">暂无操作</div>
+            </div>
+        </div>
+
+        <!-- 指导输入 -->
+        <div class="card command-card">
+            <div class="guide-input-wrap">
+                <input type="text" id="guideInput" placeholder="输入指导内容..." data-i18n-placeholder-zh="输入指导内容..." data-i18n-placeholder-en="Enter guidance..." onkeydown="if(event.key==='Enter')sendGuide()">
+                <button class="btn" onclick="sendGuide()"><span data-i18n-zh="发送" data-i18n-en="Send">发送</span></button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Toast 通知容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 项目管理模态框 -->
+<div class="modal-overlay" id="projectsModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 data-i18n-zh="项目管理" data-i18n-en="Project Manager">项目管理</h2>
+            <button class="modal-close" onclick="closeProjectsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- 新建项目表单 -->
+            <div style="margin-bottom:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px" data-i18n-zh="新建项目" data-i18n-en="Create New Project">新建项目</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+                <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0">
+                    <label data-i18n-zh="名称" data-i18n-en="Name">名称</label>
+                    <input type="text" id="newProjName" placeholder="我的扫描任务" data-i18n-placeholder-zh="我的扫描任务" data-i18n-placeholder-en="my-scan">
+                </div>
+                <div class="form-group" style="flex:1.5;min-width:180px;margin-bottom:0">
+                    <label data-i18n-zh="目标" data-i18n-en="Target">目标</label>
+                    <input type="text" id="newProjTarget" placeholder="192.168.1.0/24 或 example.com" data-i18n-placeholder-zh="192.168.1.0/24 或 example.com" data-i18n-placeholder-en="192.168.1.0/24 or example.com">
+                </div>
+                <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0">
+                    <label data-i18n-zh="范围（逗号分隔）" data-i18n-en="Scope (comma separated)">范围（逗号分隔）</label>
+                    <input type="text" id="newProjScope" placeholder="留空则默认等于目标" data-i18n-placeholder-zh="留空则默认等于目标" data-i18n-placeholder-en="Leave empty to default to target">
+                </div>
+                <button class="btn btn-green" onclick="createProject()" style="height:33px;margin-bottom:0"><span data-i18n-zh="创建" data-i18n-en="Create">创建</span></button>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <!-- 项目列表 -->
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px" data-i18n-zh="现有项目" data-i18n-en="Existing Projects">现有项目</div>
+            <div id="projectTableWrap">
+                <div class="empty-state" data-i18n-zh="加载中..." data-i18n-en="Loading...">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 报告列表模态框 -->
+<div class="modal-overlay" id="reportsModal">
+    <div class="modal" style="max-width:720px;max-height:80vh">
+        <div class="modal-header">
+            <h2>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span data-i18n-zh="报告列表" data-i18n-en="Reports">报告列表</span>
+            </h2>
+            <button class="modal-close" onclick="closeReportsModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto">
+            <div id="reportsListWrap">
+                <div class="empty-state" data-i18n-zh="加载中..." data-i18n-en="Loading...">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 设置管理模态框 -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal" style="max-width:680px;max-height:85vh">
+        <div class="modal-header">
+            <h2>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span data-i18n-zh="设置" data-i18n-en="Settings">设置</span>
+            </h2>
+            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto">
+
+            <!-- Tab 导航 -->
+            <div class="settings-tabs" id="settingsTabs">
+                <button class="settings-tab active" data-tab="llm" data-i18n-zh="LLM" data-i18n-en="LLM">LLM</button>
+                <button class="settings-tab" data-tab="execution" data-i18n-zh="执行" data-i18n-en="Execution">执行</button>
+                <button class="settings-tab" data-tab="security" data-i18n-zh="安全" data-i18n-en="Security">安全</button>
+                <button class="settings-tab" data-tab="storage" data-i18n-zh="存储" data-i18n-en="Storage">存储</button>
+                <button class="settings-tab" data-tab="logging" data-i18n-zh="日志" data-i18n-en="Logging">日志</button>
+            </div>
+
+            <!-- LLM 配置 -->
+            <div class="settings-panel active" id="tab-llm">
+                <div class="settings-section-title" data-i18n-zh="LLM 提供商" data-i18n-en="LLM Provider">LLM 提供商</div>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n-zh="提供商" data-i18n-en="Provider">提供商</label>
+                        <select id="cfg_llm_provider">
+                            <option value="openai" data-i18n-zh="OpenAI（兼容接口）" data-i18n-en="OpenAI (Compatible)">OpenAI（兼容接口）</option>
+                            <option value="ollama" data-i18n-zh="Ollama（本地）" data-i18n-en="Ollama (Local)">Ollama（本地）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="模型" data-i18n-en="Model">模型</label>
+                        <input type="text" id="cfg_llm_model" placeholder="deepseek-ai/DeepSeek-V3.2">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label data-i18n-zh="API Key" data-i18n-en="API Key">API Key</label>
+                        <input type="password" id="cfg_llm_api_key" placeholder="sk-****">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label data-i18n-zh="基础地址" data-i18n-en="Base URL">基础地址</label>
+                        <input type="text" id="cfg_llm_base_url" placeholder="https://api.openai.com/v1">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="温度" data-i18n-en="Temperature">温度</label>
+                        <input type="number" id="cfg_llm_temperature" step="0.1" min="0" max="2" placeholder="0.3">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="最大 Tokens" data-i18n-en="Max Tokens">最大 Tokens</label>
+                        <input type="number" id="cfg_llm_max_tokens" min="256" max="65536" placeholder="4096">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="上下文窗口" data-i18n-en="Context Window">上下文窗口</label>
+                        <input type="number" id="cfg_llm_context_window" min="2048" max="1000000" placeholder="128000">
+                    </div>
+                </div>
+                <div class="settings-inline-actions">
+                    <button class="btn" id="btnTestLlm" onclick="testLlmConnection()">
+                        <span data-i18n-zh="测试连接" data-i18n-en="Test Connection">测试连接</span>
+                    </button>
+                    <span id="llmTestStatus" class="settings-inline-status"></span>
+                </div>
+                <div class="settings-section-title" style="margin-top:14px" data-i18n-zh="Ollama（本地）" data-i18n-en="Ollama (Local)">Ollama（本地）</div>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n-zh="Ollama 地址" data-i18n-en="Ollama Base URL">Ollama 地址</label>
+                        <input type="text" id="cfg_ollama_base_url" placeholder="http://localhost:11434">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="Ollama 模型" data-i18n-en="Ollama Model">Ollama 模型</label>
+                        <input type="text" id="cfg_ollama_model" placeholder="qwen2.5:32b">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 执行控制 -->
+            <div class="settings-panel" id="tab-execution">
+                <div class="settings-section-title" data-i18n-zh="执行控制" data-i18n-en="Execution Control">执行控制</div>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n-zh="默认超时（秒）" data-i18n-en="Default Timeout (s)">默认超时（秒）</label>
+                        <input type="number" id="cfg_exec_default_timeout" min="10" max="7200" placeholder="300">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="最大超时（秒）" data-i18n-en="Max Timeout (s)">最大超时（秒）</label>
+                        <input type="number" id="cfg_exec_max_timeout" min="60" max="7200" placeholder="1800">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="最大重试次数" data-i18n-en="Max Retries">最大重试次数</label>
+                        <input type="number" id="cfg_exec_max_retries" min="0" max="10" placeholder="3">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="最大连续失败次数" data-i18n-en="Max Consecutive Failures">最大连续失败次数</label>
+                        <input type="number" id="cfg_exec_max_failures" min="1" max="20" placeholder="3">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="并行工作数" data-i18n-en="Parallel Workers">并行工作数</label>
+                        <input type="number" id="cfg_exec_parallel" min="1" max="8" placeholder="2">
+                    </div>
+                </div>
+                <div class="settings-section-title" style="margin-top:14px" data-i18n-zh="自动审批风险级别" data-i18n-en="Auto Approve Risk Levels">自动审批风险级别</div>
+                <div class="settings-checkboxes">
+                    <label class="settings-checkbox"><input type="checkbox" id="cfg_approve_low" value="low"><span data-i18n-zh="低" data-i18n-en="Low">低</span></label>
+                    <label class="settings-checkbox"><input type="checkbox" id="cfg_approve_medium" value="medium"><span data-i18n-zh="中" data-i18n-en="Medium">中</span></label>
+                    <label class="settings-checkbox"><input type="checkbox" id="cfg_approve_high" value="high"><span data-i18n-zh="高" data-i18n-en="High">高</span></label>
+                </div>
+            </div>
+
+            <!-- 安全限制 -->
+            <div class="settings-panel" id="tab-security">
+                <div class="settings-section-title" data-i18n-zh="安全" data-i18n-en="Security">安全</div>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n-zh="最大输出大小（字节）" data-i18n-en="Max Output Size (bytes)">最大输出大小（字节）</label>
+                        <input type="number" id="cfg_sec_max_output" min="1024" placeholder="1048576">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="网络范围校验" data-i18n-en="Network Scope Enforcement">网络范围校验</label>
+                        <select id="cfg_sec_scope">
+                            <option value="false" data-i18n-zh="禁用" data-i18n-en="Disabled">禁用</option>
+                            <option value="true" data-i18n-zh="启用" data-i18n-en="Enabled">启用</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:10px">
+                    <label data-i18n-zh="禁止命令（每行一条）" data-i18n-en="Blocked Commands (one per line)">禁止命令（每行一条）</label>
+                    <textarea id="cfg_sec_blocked" rows="6" style="width:100%;font-family:var(--font-mono);font-size:11px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:3px;padding:8px;resize:vertical" placeholder="rm -rf&#10;dd if=&#10;mkfs"></textarea>
+                </div>
+            </div>
+
+            <!-- 存储 -->
+            <div class="settings-panel" id="tab-storage">
+                <div class="settings-section-title" data-i18n-zh="存储路径" data-i18n-en="Storage Paths">存储路径</div>
+                <div class="settings-grid" style="grid-template-columns:1fr">
+                    <div class="form-group">
+                        <label data-i18n-zh="数据库路径" data-i18n-en="Database Path">数据库路径</label>
+                        <input type="text" id="cfg_store_db" placeholder="./data/halberdstrike.db">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="项目目录" data-i18n-en="Projects Directory">项目目录</label>
+                        <input type="text" id="cfg_store_projects" placeholder="./data/projects">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="日志目录" data-i18n-en="Logs Directory">日志目录</label>
+                        <input type="text" id="cfg_store_logs" placeholder="./data/logs">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="报告目录" data-i18n-en="Reports Directory">报告目录</label>
+                        <input type="text" id="cfg_store_reports" placeholder="./data/reports">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日志 -->
+            <div class="settings-panel" id="tab-logging">
+                <div class="settings-section-title" data-i18n-zh="日志" data-i18n-en="Logging">日志</div>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label data-i18n-zh="日志级别" data-i18n-en="Log Level">日志级别</label>
+                        <select id="cfg_log_level">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n-zh="控制台输出" data-i18n-en="Console Output">控制台输出</label>
+                        <select id="cfg_log_console">
+                            <option value="true" data-i18n-zh="启用" data-i18n-en="Enabled">启用</option>
+                            <option value="false" data-i18n-zh="禁用" data-i18n-en="Disabled">禁用</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label data-i18n-zh="日志文件路径" data-i18n-en="Log File Path">日志文件路径</label>
+                        <input type="text" id="cfg_log_file" placeholder="./data/logs/halberdstrike.log">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <span id="settingsSaveStatus" style="font-size:11px;color:var(--text-dim);flex:1"></span>
+            <button class="btn" onclick="closeSettingsModal()"><span data-i18n-zh="取消" data-i18n-en="Cancel">取消</span></button>
+            <button class="btn btn-cyan" onclick="saveSettings()"><span data-i18n-zh="保存并应用" data-i18n-en="Save & Apply">保存并应用</span></button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  HalberdStrike HUD - Frontend Logic
+// ══════════════════════════════════════════════
+
+let evtSource = null;
+let state = { status: {}, tree: {}, findings: [], logs: [], progress: [], charts: {} };
+let charts = {};
+let currentLang = 'zh';
+const BG_MODE_LIST = ['cyber', 'light', 'dawn', 'ocean', 'aurora'];
+let _progressPollTimer = null;
+const hasChartJs = typeof window.Chart !== 'undefined';
+
+// ── Chart.js 全局配置 ──
+if (hasChartJs) {
+    Chart.defaults.color = '#7a8ba8';
+    Chart.defaults.borderColor = 'rgba(0,255,255,0.08)';
+    Chart.defaults.font.family = "'JetBrains Mono', monospace";
+    Chart.defaults.font.size = 10;
+    Chart.defaults.plugins.legend.labels.boxWidth = 10;
+    Chart.defaults.plugins.legend.labels.padding = 8;
+    Chart.defaults.animation.duration = 600;
+    Chart.defaults.animation.easing = 'easeOutQuart';
+} else {
+    console.warn('Chart.js not loaded, charts will be disabled.');
+}
+
+const COLORS = {
+    cyan: '#00ffff', green: '#00ff88', yellow: '#ffcc00',
+    red: '#ff3355', orange: '#ff8844', purple: '#aa66ff',
+    blue: '#4488ff', magenta: '#ff44ff', dim: '#4a5568'
+};
+
+const I18N = {
+    zh: {
+        noProject: '无项目',
+        active: '运行中',
+        paused: '已暂停',
+        offline: '离线',
+        awaitingCommands: '等待命令中...',
+        initializing: '初始化中...',
+        noFindings: '暂无发现',
+        noActions: '暂无操作',
+        loadProjectFirst: '请先加载项目（点击“项目管理”）',
+        maxIterationsPrompt: '最大迭代次数（默认 10）:',
+        startFailed: '启动失败',
+        reportGenerating: '生成中...',
+        reportReady: '报告已生成，正在下载...',
+        reportFailed: '报告生成失败',
+        reportWaiting: '报告生成中，请稍候...',
+        reportText: '报告',
+        noProjects: '暂无项目',
+        projectLoadFailed: '加载失败',
+        nameTargetRequired: '名称和目标为必填项',
+        requestFailed: '请求失败',
+        deleteProjectConfirm: '确定删除项目 "{name}" 吗？此操作不可恢复。',
+        loading: '加载中...',
+        noReports: '暂无已生成报告',
+        reportsLoadFailed: '报告加载失败',
+        generatingBtn: '生成中...',
+        failedLoadConfig: '加载配置失败',
+        saving: '保存中...',
+        saveSuccess: '保存成功',
+        saveFailed: '保存失败',
+        failedSaveConfig: '保存配置失败',
+        testingConnection: '测试连接中...',
+        testSuccess: '连接测试成功',
+        testFailed: '连接测试失败',
+        failedTestConfig: '测试配置失败',
+        guideSendFailed: '发送指导失败',
+        bgModeChanged: '已切换背景：{mode}',
+        bg_cyber: '赛博暗色',
+        bg_light: '柔光灰',
+        bg_dawn: '晨雾',
+        bg_ocean: '海洋',
+        bg_aurora: '极光',
+        phase_idle: '待机',
+        phase_starting: '启动中',
+        phase_reasoning: '推理选任务',
+        phase_generating: '生成命令',
+        phase_executing: '执行工具',
+        phase_parsing: '分析结果',
+        phase_paused: '已暂停',
+        phase_stopping: '停止中',
+        runWorkingHint: '正在处理（含 LLM 调用，可能需等待数十秒）…',
+        iterationLabel: '迭代 {c}/{m}',
+    },
+    en: {
+        noProject: 'NO PROJECT',
+        active: 'ACTIVE',
+        paused: 'PAUSED',
+        offline: 'OFFLINE',
+        awaitingCommands: 'AWAITING COMMANDS...',
+        initializing: 'INITIALIZING...',
+        noFindings: 'NO FINDINGS YET',
+        noActions: 'NO ACTIONS YET',
+        loadProjectFirst: 'Please load a project first (click Projects)',
+        maxIterationsPrompt: 'Max iterations (default 10):',
+        startFailed: 'Start failed',
+        reportGenerating: 'GENERATING...',
+        reportReady: 'Report ready, downloading...',
+        reportFailed: 'Report generation failed',
+        reportWaiting: 'Report is generating, please wait...',
+        reportText: 'REPORT',
+        noProjects: 'NO PROJECTS YET',
+        projectLoadFailed: 'FAILED TO LOAD',
+        nameTargetRequired: 'Name and Target are required',
+        requestFailed: 'Request failed',
+        deleteProjectConfirm: 'Delete project "{name}"? This cannot be undone.',
+        loading: 'Loading...',
+        noReports: 'NO REPORTS GENERATED YET',
+        reportsLoadFailed: 'FAILED TO LOAD REPORTS',
+        generatingBtn: 'Generating...',
+        failedLoadConfig: 'Failed to load config',
+        saving: 'Saving...',
+        saveSuccess: 'Saved successfully',
+        saveFailed: 'Save failed',
+        failedSaveConfig: 'Failed to save config',
+        testingConnection: 'Testing connection...',
+        testSuccess: 'Connection succeeded',
+        testFailed: 'Connection failed',
+        failedTestConfig: 'Failed to test config',
+        guideSendFailed: 'Failed to send guidance',
+        bgModeChanged: 'Background: {mode}',
+        bg_cyber: 'Cyber Dark',
+        bg_light: 'Soft Gray',
+        bg_dawn: 'Dawn',
+        bg_ocean: 'Ocean',
+        bg_aurora: 'Aurora',
+        phase_idle: 'Idle',
+        phase_starting: 'Starting',
+        phase_reasoning: 'Selecting task',
+        phase_generating: 'Generating commands',
+        phase_executing: 'Running tools',
+        phase_parsing: 'Analyzing results',
+        phase_paused: 'Paused',
+        phase_stopping: 'Stopping',
+        runWorkingHint: 'Working (LLM calls may take a while)…',
+        iterationLabel: 'Iter {c}/{m}',
+    }
+};
+
+function t(key) {
+    return (I18N[currentLang] && I18N[currentLang][key]) || key;
+}
+
+function applyLanguage(lang) {
+    currentLang = lang;
+    document.body.setAttribute('data-lang', lang);
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.title = lang === 'zh' ? 'HalberdStrike 控制台' : 'HalberdStrike Console';
+    document.getElementById('langToggleBtn').textContent = lang === 'zh' ? '中文' : 'English';
+    document.querySelectorAll('[data-i18n-zh][data-i18n-en]').forEach((el) => {
+        el.textContent = lang === 'zh' ? el.dataset.i18nZh : el.dataset.i18nEn;
+    });
+    document.querySelectorAll('[data-i18n-title-zh][data-i18n-title-en]').forEach((el) => {
+        el.title = lang === 'zh' ? el.dataset.i18nTitleZh : el.dataset.i18nTitleEn;
+    });
+    document.querySelectorAll('[data-i18n-placeholder-zh][data-i18n-placeholder-en]').forEach((el) => {
+        el.placeholder = lang === 'zh' ? el.dataset.i18nPlaceholderZh : el.dataset.i18nPlaceholderEn;
+    });
+    updateBgButtonLabel();
+    renderStatus();
+    renderProgress();
+    renderTree();
+    renderFindings();
+    renderLogs();
+    if (document.getElementById('projectsModal').classList.contains('active')) loadProjects();
+    if (document.getElementById('reportsModal').classList.contains('active')) loadReportsList();
+}
+
+function toggleLanguage() {
+    applyLanguage(currentLang === 'zh' ? 'en' : 'zh');
+}
+
+function loadBgMode() {
+    const saved = localStorage.getItem('halberdstrike_bg');
+    const mode = saved && BG_MODE_LIST.includes(saved) ? saved : 'cyber';
+    document.body.setAttribute('data-bg-mode', mode);
+    updateBgButtonLabel();
+}
+
+function cycleBgMode() {
+    const cur = document.body.getAttribute('data-bg-mode') || 'cyber';
+    const i = BG_MODE_LIST.indexOf(cur);
+    const next = BG_MODE_LIST[(i + 1) % BG_MODE_LIST.length];
+    document.body.setAttribute('data-bg-mode', next);
+    localStorage.setItem('halberdstrike_bg', next);
+    updateBgButtonLabel();
+    toast(t('bgModeChanged').replace('{mode}', t('bg_' + next)), '');
+}
+
+function updateBgButtonLabel() {
+    const cur = document.body.getAttribute('data-bg-mode') || 'cyber';
+    const el = document.getElementById('bgModeBtn');
+    if (el) el.textContent = t('bg_' + cur);
+}
+
+function startProgressPoll() {
+    if (_progressPollTimer) return;
+    _progressPollTimer = setInterval(async () => {
+        const s = state.status || {};
+        if (!s.is_running || s.is_paused) {
+            stopProgressPoll();
+            return;
+        }
+        try {
+            const [pr, stR] = await Promise.all([
+                fetch('/api/progress'),
+                fetch('/api/status'),
+            ]);
+            state.progress = await pr.json();
+            state.status = await stR.json();
+            renderStatus();
+            renderProgress();
+        } catch (e) { /* ignore */ }
+    }, 1200);
+}
+
+function stopProgressPoll() {
+    if (_progressPollTimer) {
+        clearInterval(_progressPollTimer);
+        _progressPollTimer = null;
+    }
+}
+
+// ── 时钟 ──
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('navTime').textContent =
+        now.toTimeString().slice(0, 8);
+}, 1000);
+
+// ── SSE 连接 ──
+function connectSSE() {
+    if (evtSource) evtSource.close();
+    evtSource = new EventSource('/api/events');
+
+    evtSource.onopen = () => {
+        document.getElementById('connectionDot').classList.remove('disconnected');
+    };
+
+    evtSource.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'full_state') {
+                state = data;
+                renderAll();
+                if (data.charts) renderCharts(data.charts);
+                syncProgressPollFromState();
+            } else if (data.type === 'update') {
+                if (data.status) state.status = data.status;
+                if (data.progress) state.progress = data.progress;
+                renderStatus();
+                renderProgress();
+                syncProgressPollFromState();
+            }
+        } catch (err) { console.error('SSE parse:', err); }
+    };
+
+    evtSource.onerror = () => {
+        document.getElementById('connectionDot').classList.add('disconnected');
+        setTimeout(connectSSE, 3000);
+    };
+}
+
+// ── 渲染 ──
+function renderAll() {
+    renderStatus();
+    renderProgress();
+    renderTree();
+    renderFindings();
+    renderLogs();
+    syncProgressPollFromState();
+}
+
+function syncProgressPollFromState() {
+    const s = state.status || {};
+    if (s.is_running && !s.is_paused) startProgressPoll();
+    else stopProgressPoll();
+}
+
+function renderStatus() {
+    const s = state.status || {};
+    const p = s.project || {};
+
+    document.getElementById('projectName').textContent = p.name || '--';
+    document.getElementById('projectTarget').textContent = p.target || '--';
+    const navProjectEl = document.getElementById('navProject');
+    if (navProjectEl) navProjectEl.textContent = p.name || t('noProject');
+    const navTargetEl = document.getElementById('navTarget');
+    if (navTargetEl) navTargetEl.textContent = p.target || '--';
+    const heroTargetMirrorEl = document.getElementById('heroTargetMirror');
+    if (heroTargetMirrorEl) heroTargetMirrorEl.textContent = p.target || '--';
+    document.getElementById('failureCount').textContent = s.consecutive_failures || 0;
+    const heroLinkStateEl = document.getElementById('heroLinkState');
+    if (heroLinkStateEl) heroLinkStateEl.textContent = s.is_running ? 'ENGAGED' : 'ONLINE';
+
+    const badge = document.getElementById('statusBadge');
+    if (s.is_running && !s.is_paused) {
+        badge.className = 'status-badge running';
+        badge.textContent = t('active');
+    } else if (s.is_paused) {
+        badge.className = 'status-badge paused';
+        badge.textContent = t('paused');
+    } else {
+        badge.className = 'status-badge stopped';
+        badge.textContent = t('offline');
+    }
+
+    renderRunProgress();
+}
+
+function renderRunProgress() {
+    const s = state.status || {};
+    const rp = s.run_progress || {};
+    const phase = (rp.phase || 'idle').toLowerCase();
+    const running = !!(s.is_running && !s.is_paused);
+    const strip = document.getElementById('runProgressStrip');
+    const pulse = document.getElementById('runPulse');
+    const phaseEl = document.getElementById('runPhaseLabel');
+    const detailEl = document.getElementById('runDetailText');
+    const fill = document.getElementById('runIterFill');
+    const label = document.getElementById('runIterLabel');
+    if (!strip || !phaseEl || !detailEl || !fill || !label) return;
+
+    strip.classList.toggle('is-active', running);
+    if (pulse) pulse.classList.toggle('is-pulsing', running);
+
+    const pkey = 'phase_' + phase;
+    phaseEl.textContent = (I18N[currentLang] && I18N[currentLang][pkey]) ? t(pkey) : phase;
+    detailEl.textContent = (rp.detail && String(rp.detail).trim()) ? rp.detail : (running ? t('runWorkingHint') : '');
+
+    const im = parseInt(rp.iteration_max, 10) || 0;
+    const ic = parseInt(rp.iteration, 10) || 0;
+    if (im > 0 && ic >= 0) {
+        const pct = Math.min(100, Math.round((ic / im) * 100));
+        fill.style.width = pct + '%';
+        label.textContent = t('iterationLabel').replace('{c}', String(ic)).replace('{m}', String(im));
+    } else {
+        fill.style.width = running ? '12%' : '0%';
+        label.textContent = running ? '…' : '';
+    }
+}
+
+function renderProgress() {
+    const container = document.getElementById('progressList');
+    const items = state.progress || [];
+
+    const s = state.status || {};
+    const running = !!(s.is_running && !s.is_paused);
+    if (!items.length) {
+        const hint = running
+            ? `<div class="empty-state progress-wait-hint">${t('runWorkingHint')}</div>`
+            : `<div class="empty-state">${t('awaitingCommands')}</div>`;
+        container.innerHTML = hint;
+        return;
+    }
+
+    container.innerHTML = items.map(p => {
+        const pct = p.progress_pct || 0;
+        const cls = pct >= 80 ? 'high' : pct >= 40 ? 'mid' : '';
+        const elapsed = fmtTime(p.elapsed || 0);
+        const eta = p.eta_seconds > 0 ? fmtTime(p.eta_seconds) : '--';
+        const speed = fmtSpeed(p.speed_bps || 0);
+
+        return `<div class="progress-item">
+            <div class="cmd-name" title="${esc(p.command)}">${esc(p.command)}</div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-bg"><div class="progress-bar-fill ${cls}" style="width:${pct}%"></div></div>
+                <span class="progress-pct">${pct}%</span>
+            </div>
+            <div class="progress-meta">
+                <span>T+ ${elapsed}</span>
+                <span>ETA ${eta}</span>
+                <span>${speed}</span>
+                <span>PID:${p.pid}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderTree() {
+    const container = document.getElementById('treeContainer');
+    const tree = state.tree || {};
+
+    if (!tree.root) {
+        container.innerHTML = `<div class="empty-state">${t('initializing')}</div>`;
+        updateTreeStats({});
+        return;
+    }
+
+    container.innerHTML = renderNode(tree.root);
+    updateTreeStats(tree.root);
+}
+
+function renderNode(node) {
+    if (!node) return '';
+    const childrenHtml = (node.children || []).map(c => renderNode(c)).join('');
+    return `<div class="tree-node">
+        <div class="tree-node-item">
+            <span class="node-icon ${node.status}"></span>
+            <span class="node-id">${esc(node.id)}</span>
+            <span class="node-name">${esc(node.name)}</span>
+            <span class="node-status ${node.status}">${node.status.replace('_',' ')}</span>
+        </div>
+        ${childrenHtml}
+    </div>`;
+}
+
+function updateTreeStats(root) {
+    let completed = 0, running = 0, failed = 0, pending = 0;
+    function walk(n) {
+        if (!n) return;
+        if (n.status === 'completed') completed++;
+        else if (n.status === 'in_progress') running++;
+        else if (n.status === 'failed') failed++;
+        else if (n.status === 'pending') pending++;
+        (n.children || []).forEach(walk);
+    }
+    walk(root);
+
+    document.getElementById('statCompleted').textContent = completed;
+    document.getElementById('statRunning').textContent = running;
+    document.getElementById('statFailed').textContent = failed;
+    document.getElementById('statPending').textContent = pending;
+}
+
+function renderFindings() {
+    const container = document.getElementById('findingsList');
+    const items = state.findings || [];
+
+    document.getElementById('findingsCount').textContent = items.length;
+    document.getElementById('statFindings').textContent = items.length;
+
+    if (!items.length) {
+        container.innerHTML = `<div class="empty-state">${t('noFindings')}</div>`;
+        return;
+    }
+
+    container.innerHTML = items.map(f => `
+        <div class="finding-item">
+            <div class="severity-dot ${f.severity}"></div>
+            <div class="finding-detail">
+                <div class="finding-title">${esc(f.title)}</div>
+                <div class="finding-meta">${f.severity.toUpperCase()} // ${f.type} ${f.cve_id ? '// ' + f.cve_id : ''} // ${f.timestamp}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderLogs() {
+    const container = document.getElementById('logsList');
+    const items = state.logs || [];
+    document.getElementById('statLogs').textContent = items.length;
+
+    if (!items.length) {
+        container.innerHTML = `<div class="empty-state">${t('noActions')}</div>`;
+        return;
+    }
+
+    container.innerHTML = items.map(l => `
+        <div class="log-item">
+            <span class="log-time">${l.timestamp}</span>
+            <span class="log-module">${l.module}</span>
+            <span class="log-risk ${l.risk_level}">${l.risk_level}</span>
+            ${l.duration ? `<span style="color:var(--text-dim)"> ${l.duration.toFixed(1)}s</span>` : ''}
+            ${l.command ? `<span class="log-cmd" title="${esc(l.command)}">${esc(l.command)}</span>` : ''}
+        </div>
+    `).join('');
+}
+
+// ── 图表渲染 (复用实例, 仅更新数据, 避免闪烁) ──
+let _timelineRawData = [];
+
+function renderCharts(cd) {
+    if (!cd || !hasChartJs) return;
+    renderSeverityChart(cd.severity_distribution || {});
+    renderTaskStatusChart(cd.task_status || {});
+    renderRiskChart(cd.risk_distribution || {});
+    renderTokenStats(cd.token_stats || {});
+    renderTimelineChart(cd.execution_timeline || []);
+}
+
+function renderSeverityChart(data) {
+    if (!hasChartJs) return;
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    const colors = [COLORS.red, COLORS.orange, COLORS.yellow, COLORS.blue, COLORS.dim];
+
+    if (charts.severity) {
+        charts.severity.data.labels = labels.map(l => l.toUpperCase());
+        charts.severity.data.datasets[0].data = values;
+        charts.severity.update('none');
+        return;
+    }
+
+    charts.severity = new Chart(document.getElementById('chartSeverity'), {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.toUpperCase()),
+            datasets: [{
+                data: values,
+                backgroundColor: colors.map(c => c + '33'),
+                borderColor: colors,
+                borderWidth: 1.5,
+                hoverBorderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'right', labels: { font: { size: 9 } } }
+            },
+            transitions: { active: { animation: { duration: 200 } } }
+        }
+    });
+}
+
+function renderTaskStatusChart(data) {
+    if (!hasChartJs) return;
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    const colorMap = { pending: COLORS.dim, in_progress: COLORS.yellow, completed: COLORS.green, failed: COLORS.red, skipped: '#666' };
+    const colors = labels.map(l => colorMap[l] || COLORS.dim);
+
+    if (charts.taskStatus) {
+        charts.taskStatus.data.labels = labels.map(l => l.replace('_',' ').toUpperCase());
+        charts.taskStatus.data.datasets[0].data = values;
+        charts.taskStatus.update('none');
+        return;
+    }
+
+    charts.taskStatus = new Chart(document.getElementById('chartTaskStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.replace('_',' ').toUpperCase()),
+            datasets: [{
+                data: values,
+                backgroundColor: colors.map(c => c + '33'),
+                borderColor: colors,
+                borderWidth: 1.5,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'right', labels: { font: { size: 9 } } }
+            },
+            transitions: { active: { animation: { duration: 200 } } }
+        }
+    });
+}
+
+function renderRiskChart(data) {
+    if (!hasChartJs) return;
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    const colorMap = { low: COLORS.green, medium: COLORS.yellow, high: COLORS.red };
+    const colors = labels.map(l => colorMap[l] || COLORS.dim);
+
+    if (charts.risk) {
+        charts.risk.data.labels = labels.map(l => l.toUpperCase());
+        charts.risk.data.datasets[0].data = values;
+        charts.risk.data.datasets[0].backgroundColor = colors.map(c => c + '44');
+        charts.risk.data.datasets[0].borderColor = colors;
+        charts.risk.update('none');
+        return;
+    }
+
+    charts.risk = new Chart(document.getElementById('chartRisk'), {
+        type: 'bar',
+        data: {
+            labels: labels.map(l => l.toUpperCase()),
+            datasets: [{
+                label: 'Commands',
+                data: values,
+                backgroundColor: colors.map(c => c + '44'),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: 'rgba(0,255,255,0.04)' }, ticks: { stepSize: 1 } }
+            },
+            transitions: { active: { animation: { duration: 200 } } }
+        }
+    });
+}
+
+function renderTokenStats(data) {
+    if (!hasChartJs) return;
+    if (!data) return;
+    const fmt = n => typeof n === 'number' ? n.toLocaleString() : '0';
+    document.getElementById('tsPrompt').textContent = fmt(data.prompt_tokens);
+    document.getElementById('tsCompletion').textContent = fmt(data.completion_tokens);
+    document.getElementById('tsTotal').textContent = fmt(data.total_tokens);
+    document.getElementById('tsRequests').textContent = fmt(data.requests);
+    document.getElementById('tsFailed').textContent = fmt(data.failed);
+    document.getElementById('tsRetries').textContent = fmt(data.retries);
+    document.getElementById('tsLatency').textContent = (data.avg_latency || 0).toFixed(2) + 's';
+    // 比例条
+    const total = (data.prompt_tokens || 0) + (data.completion_tokens || 0);
+    if (total > 0) {
+        const pPct = ((data.prompt_tokens / total) * 100).toFixed(1);
+        const cPct = (100 - parseFloat(pPct)).toFixed(1);
+        document.getElementById('tsbPrompt').style.width = pPct + '%';
+        document.getElementById('tsbCompletion').style.width = cPct + '%';
+    }
+}
+
+function renderTimelineChart(data) {
+    if (!hasChartJs) return;
+    _timelineRawData = data;
+    const labels = data.map((d, i) => d.time ? d.time.slice(11, 19) : `#${i+1}`);
+    const durations = data.map(d => d.duration || 0);
+    const riskColorMap = { low: COLORS.green, medium: COLORS.yellow, high: COLORS.red };
+    const pointColors = data.map(d => riskColorMap[d.risk] || COLORS.cyan);
+
+    if (charts.timeline) {
+        charts.timeline.data.labels = labels;
+        charts.timeline.data.datasets[0].data = durations;
+        charts.timeline.data.datasets[0].pointBackgroundColor = pointColors;
+        charts.timeline.data.datasets[0].pointBorderColor = pointColors;
+        charts.timeline.update('none');
+        return;
+    }
+
+    charts.timeline = new Chart(document.getElementById('chartTimeline'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Duration (s)',
+                data: durations,
+                borderColor: COLORS.cyan,
+                backgroundColor: COLORS.cyan + '10',
+                borderWidth: 1.5,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: pointColors,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: (tip) => _timelineRawData[tip.dataIndex] ? _timelineRawData[tip.dataIndex].command : ''
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 8 } } },
+                y: { beginAtZero: true, grid: { color: 'rgba(0,255,255,0.04)' }, title: { display: true, text: 'sec', font: { size: 9 } } }
+            },
+            transitions: { active: { animation: { duration: 200 } } }
+        }
+    });
+}
+
+// ── 操作 ──
+async function control(action) {
+    try {
+        const resp = await fetch('/api/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+    } catch (e) { console.error('Control error:', e); }
+}
+
+async function sendGuide() {
+    const input = document.getElementById('guideInput');
+    const text = input.value.trim();
+    if (!text) return;
+    try {
+        const resp = await fetch('/api/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'guide', guidance: text })
+        });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+        if (data.ok) input.value = '';
+    } catch (e) {
+        console.error(e);
+        toast(t('guideSendFailed'), 'error');
+    }
+}
+
+// start: 开始渗透测试（当前已加载项目）
+async function startCurrentScan() {
+    const proj = (state.status || {}).project || {};
+    if (!proj.id) {
+        toast(t('loadProjectFirst'), 'error');
+        return;
+    }
+    const maxIter = prompt(t('maxIterationsPrompt'), '10');
+    if (maxIter === null) return;
+    try {
+        const resp = await fetch(`/api/projects/${proj.id}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_iterations: parseInt(maxIter) || 50 })
+        });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+        if (data.ok) setTimeout(refreshAll, 1000);
+    } catch (e) { toast(t('startFailed'), 'error'); }
+}
+
+// report: 生成当前项目渗透报告并下载（含加载动画）
+let _reportGenerating = false;
+async function generateCurrentReport() {
+    const proj = (state.status || {}).project || {};
+    if (!proj.id) {
+        toast(t('loadProjectFirst'), 'error');
+        return;
+    }
+    if (_reportGenerating) { toast(t('reportWaiting'), 'error'); return; }
+
+    const btn = document.getElementById('btnGenReport');
+    const txtEl = document.getElementById('btnGenReportText');
+    _reportGenerating = true;
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    txtEl.textContent = t('reportGenerating');
+
+    try {
+        const resp = await fetch(`/api/projects/${proj.id}/report`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok && data.path) {
+            toast(t('reportReady'), 'success');
+            const a = document.createElement('a');
+            a.href = '/api/download_report?path=' + encodeURIComponent(data.path);
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch (e) { toast(t('reportFailed'), 'error'); }
+    finally {
+        _reportGenerating = false;
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        txtEl.textContent = t('reportText');
+    }
+}
+
+async function refreshAll() {
+    try {
+        const [treeR, findR, logR, chartR] = await Promise.all([
+            fetch('/api/tree'), fetch('/api/findings'),
+            fetch('/api/logs?limit=30'), fetch('/api/charts')
+        ]);
+        state.tree = await treeR.json();
+        state.findings = await findR.json();
+        state.logs = await logR.json();
+        const cd = await chartR.json();
+
+        renderTree();
+        renderFindings();
+        renderLogs();
+        renderCharts(cd);
+    } catch (e) { console.error(e); }
+}
+
+// ── 工具函数 ──
+function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m > 0 ? `${m}m${sec.toString().padStart(2,'0')}s` : `${sec}s`;
+}
+
+function fmtSpeed(bps) {
+    if (bps > 1048576) return (bps/1048576).toFixed(1) + ' MB/s';
+    if (bps > 1024) return (bps/1024).toFixed(1) + ' KB/s';
+    if (bps > 0) return Math.round(bps) + ' B/s';
+    return '--';
+}
+
+function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+// ── 项目管理 ──
+function openProjectsModal() {
+    document.getElementById('projectsModal').classList.add('active');
+    loadProjects();
+}
+
+function closeProjectsModal() {
+    document.getElementById('projectsModal').classList.remove('active');
+}
+
+document.getElementById('projectsModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeProjectsModal();
+});
+
+async function loadProjects() {
+    const wrap = document.getElementById('projectTableWrap');
+    try {
+        const resp = await fetch('/api/projects');
+        const projects = await resp.json();
+        if (!projects.length) {
+            wrap.innerHTML = `<div class="empty-state">${t('noProjects')}</div>`;
+            return;
+        }
+        wrap.innerHTML = `<table class="project-table">
+            <thead><tr>
+                <th></th><th>${currentLang === 'zh' ? '名称' : 'Name'}</th><th>${currentLang === 'zh' ? '目标' : 'Target'}</th><th>${currentLang === 'zh' ? '状态' : 'Status'}</th><th>${currentLang === 'zh' ? '创建时间' : 'Created'}</th><th>${currentLang === 'zh' ? '操作' : 'Actions'}</th>
+            </tr></thead>
+            <tbody>${projects.map(p => `<tr>
+                <td>${p.is_current ? '<span class="p-current"></span>' : ''}</td>
+                <td class="p-name">${esc(p.name)}</td>
+                <td class="p-target">${esc(p.target)}</td>
+                <td><span class="p-status ${p.status}">${p.status}</span></td>
+                <td style="color:var(--text-dim)">${p.created_at}</td>
+                <td class="actions-cell">
+                    <button class="btn-sm primary" onclick="loadProject('${p.id}')">${currentLang === 'zh' ? '加载' : 'Load'}</button>
+                    <button class="btn-sm success" onclick="startScan('${p.id}')">${currentLang === 'zh' ? '扫描' : 'Scan'}</button>
+                    <button class="btn-sm" onclick="genReport('${p.id}', event)">${currentLang === 'zh' ? '报告' : 'Report'}</button>
+                    <button class="btn-sm danger" onclick="deleteProject('${p.id}','${esc(p.name)}')">${currentLang === 'zh' ? '删除' : 'Del'}</button>
+                </td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+    } catch (e) {
+        wrap.innerHTML = `<div class="empty-state">${t('projectLoadFailed')}</div>`;
+        console.error(e);
+    }
+}
+
+async function createProject() {
+    const name = document.getElementById('newProjName').value.trim();
+    const target = document.getElementById('newProjTarget').value.trim();
+    const scopeStr = document.getElementById('newProjScope').value.trim();
+    if (!name || !target) { toast(t('nameTargetRequired'), 'error'); return; }
+
+    const body = { name, target };
+    if (scopeStr) body.scope = scopeStr;
+
+    try {
+        const resp = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            toast(data.message, 'success');
+            document.getElementById('newProjName').value = '';
+            document.getElementById('newProjTarget').value = '';
+            document.getElementById('newProjScope').value = '';
+            loadProjects();
+            refreshAll();
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch (e) { toast(t('requestFailed'), 'error'); }
+}
+
+async function loadProject(id) {
+    try {
+        const resp = await fetch(`/api/projects/${id}/load`, { method: 'POST' });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+        if (data.ok) { loadProjects(); refreshAll(); }
+    } catch (e) { toast(t('requestFailed'), 'error'); }
+}
+
+async function startScan(id) {
+    const maxIter = prompt(t('maxIterationsPrompt'), '10');
+    if (maxIter === null) return;
+    try {
+        const resp = await fetch(`/api/projects/${id}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_iterations: parseInt(maxIter) || 50 })
+        });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+        if (data.ok) { closeProjectsModal(); refreshAll(); }
+    } catch (e) { toast(t('requestFailed'), 'error'); }
+}
+
+async function genReport(id, evt) {
+    const src = evt && evt.target ? evt.target : (typeof event !== 'undefined' && event && event.target ? event.target : null);
+    const btn = src ? src.closest('button') : null;
+    if (btn) { btn.disabled = true; btn.textContent = t('generatingBtn'); }
+    try {
+        const resp = await fetch(`/api/projects/${id}/report`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok && data.path) {
+            toast(t('reportReady'), 'success');
+            const a = document.createElement('a');
+            a.href = '/api/download_report?path=' + encodeURIComponent(data.path);
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            toast(data.message, 'error');
+        }
+    } catch (e) { toast(t('requestFailed'), 'error'); }
+    finally {
+        if (btn) { btn.disabled = false; btn.textContent = t('reportText'); }
+    }
+}
+
+async function deleteProject(id, name) {
+    if (!confirm(t('deleteProjectConfirm').replace('{name}', name))) return;
+    try {
+        const resp = await fetch(`/api/projects/${id}/delete`, { method: 'POST' });
+        const data = await resp.json();
+        toast(data.message, data.ok ? 'success' : 'error');
+        if (data.ok) { loadProjects(); refreshAll(); }
+    } catch (e) { toast(t('requestFailed'), 'error'); }
+}
+
+// ── Toast 通知 ──
+function toast(msg, type = '') {
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => { el.remove(); }, 3500);
+}
+
+// ── 报告列表 ──
+function openReportsModal() {
+    document.getElementById('reportsModal').classList.add('active');
+    loadReportsList();
+}
+function closeReportsModal() {
+    document.getElementById('reportsModal').classList.remove('active');
+}
+document.getElementById('reportsModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeReportsModal();
+});
+
+async function loadReportsList() {
+    const wrap = document.getElementById('reportsListWrap');
+    wrap.innerHTML = `<div class="empty-state">${t('loading')}</div>`;
+    try {
+        const resp = await fetch('/api/reports');
+        const data = await resp.json();
+        if (!data.ok || !data.reports || !data.reports.length) {
+            wrap.innerHTML = `<div class="empty-state">${t('noReports')}</div>`;
+            return;
+        }
+        wrap.innerHTML = `<table class="project-table">
+            <thead><tr>
+                <th>${currentLang === 'zh' ? '文件名' : 'Filename'}</th><th>${currentLang === 'zh' ? '项目' : 'Project'}</th><th>${currentLang === 'zh' ? '大小' : 'Size'}</th><th>${currentLang === 'zh' ? '修改时间' : 'Modified'}</th><th></th>
+            </tr></thead>
+            <tbody>${data.reports.map(r => `<tr>
+                <td class="p-name" style="max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.filename)}">${esc(r.filename)}</td>
+                <td style="color:var(--text-secondary)">${esc(r.project_name)}</td>
+                <td style="color:var(--text-dim)">${r.size_kb} KB</td>
+                <td style="color:var(--text-dim)">${r.modified}</td>
+                <td><button class="btn-sm primary" onclick="downloadReport('${esc(r.path)}')">${currentLang === 'zh' ? '下载' : 'Download'}</button></td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+    } catch (e) {
+        wrap.innerHTML = `<div class="empty-state">${t('reportsLoadFailed')}</div>`;
+        console.error(e);
+    }
+}
+
+function downloadReport(path) {
+    const a = document.createElement('a');
+    a.href = '/api/download_report?path=' + encodeURIComponent(path);
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+
+// ── 设置管理 ──
+function openSettingsModal() {
+    document.getElementById('settingsModal').classList.add('active');
+    document.getElementById('llmTestStatus').textContent = '';
+    document.getElementById('llmTestStatus').className = 'settings-inline-status';
+    loadSettings();
+}
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.remove('active');
+    document.getElementById('settingsSaveStatus').textContent = '';
+}
+document.getElementById('settingsModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeSettingsModal();
+});
+
+// Tab 切换
+document.getElementById('settingsTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.settings-tab');
+    if (!btn) return;
+    const tabName = btn.dataset.tab;
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+});
+
+async function loadSettings() {
+    try {
+        const resp = await fetch('/api/config');
+        const data = await resp.json();
+        if (!data.ok) { toast(data.message, 'error'); return; }
+        const c = data.config;
+        const llm = c.llm || {};
+        const ollama = llm.ollama || {};
+        const exec = c.execution || {};
+        const sec = c.security || {};
+        const store = c.storage || {};
+        const log = c.logging || {};
+
+        // LLM
+        document.getElementById('cfg_llm_provider').value = llm.provider || 'openai';
+        document.getElementById('cfg_llm_model').value = llm.model || '';
+        document.getElementById('cfg_llm_api_key').value = llm.api_key || '';
+        document.getElementById('cfg_llm_base_url').value = llm.base_url || '';
+        document.getElementById('cfg_llm_temperature').value = llm.temperature ?? 0.3;
+        document.getElementById('cfg_llm_max_tokens').value = llm.max_tokens ?? 4096;
+        document.getElementById('cfg_llm_context_window').value = llm.context_window ?? 128000;
+        document.getElementById('cfg_ollama_base_url').value = ollama.base_url || 'http://localhost:11434';
+        document.getElementById('cfg_ollama_model').value = ollama.model || '';
+
+        // Execution
+        document.getElementById('cfg_exec_default_timeout').value = exec.default_timeout ?? 300;
+        document.getElementById('cfg_exec_max_timeout').value = exec.max_timeout ?? 1800;
+        document.getElementById('cfg_exec_max_retries').value = exec.max_retries ?? 3;
+        document.getElementById('cfg_exec_max_failures').value = exec.max_consecutive_failures ?? 3;
+        document.getElementById('cfg_exec_parallel').value = exec.parallel_workers ?? 2;
+        const approveList = exec.auto_approve_risk_levels || [];
+        document.getElementById('cfg_approve_low').checked = approveList.includes('low');
+        document.getElementById('cfg_approve_medium').checked = approveList.includes('medium');
+        document.getElementById('cfg_approve_high').checked = approveList.includes('high');
+
+        // Security
+        document.getElementById('cfg_sec_max_output').value = sec.max_output_size ?? 1048576;
+        document.getElementById('cfg_sec_scope').value = String(sec.network_scope_enforcement ?? false);
+        document.getElementById('cfg_sec_blocked').value = (sec.blocked_commands || []).join('\n');
+
+        // Storage
+        document.getElementById('cfg_store_db').value = store.database_path || '';
+        document.getElementById('cfg_store_projects').value = store.projects_dir || '';
+        document.getElementById('cfg_store_logs').value = store.logs_dir || '';
+        document.getElementById('cfg_store_reports').value = store.reports_dir || '';
+
+        // Logging
+        document.getElementById('cfg_log_level').value = log.level || 'INFO';
+        document.getElementById('cfg_log_console').value = String(log.console ?? true);
+        document.getElementById('cfg_log_file').value = log.file || '';
+
+    } catch (e) { toast(t('failedLoadConfig'), 'error'); console.error(e); }
+}
+
+async function saveSettings() {
+    const statusEl = document.getElementById('settingsSaveStatus');
+    statusEl.textContent = t('saving');
+    statusEl.style.color = 'var(--accent-yellow)';
+    const config = collectSettingsFormConfig();
+
+    try {
+        const resp = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            statusEl.textContent = t('saveSuccess');
+            statusEl.style.color = 'var(--accent-green)';
+            toast(data.message, 'success');
+            setTimeout(() => { statusEl.textContent = ''; }, 3000);
+        } else {
+            statusEl.textContent = t('saveFailed');
+            statusEl.style.color = 'var(--accent-red)';
+            toast(data.message, 'error');
+        }
+    } catch (e) {
+        statusEl.textContent = t('requestFailed');
+        statusEl.style.color = 'var(--accent-red)';
+        toast(t('failedSaveConfig'), 'error');
+    }
+}
+
+function collectSettingsFormConfig() {
+    const approveList = [];
+    if (document.getElementById('cfg_approve_low').checked) approveList.push('low');
+    if (document.getElementById('cfg_approve_medium').checked) approveList.push('medium');
+    if (document.getElementById('cfg_approve_high').checked) approveList.push('high');
+
+    const blockedText = document.getElementById('cfg_sec_blocked').value.trim();
+    const blockedList = blockedText ? blockedText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+    return {
+        llm: {
+            provider: document.getElementById('cfg_llm_provider').value,
+            api_key: document.getElementById('cfg_llm_api_key').value,
+            base_url: document.getElementById('cfg_llm_base_url').value,
+            model: document.getElementById('cfg_llm_model').value,
+            temperature: parseFloat(document.getElementById('cfg_llm_temperature').value) || 0.3,
+            max_tokens: parseInt(document.getElementById('cfg_llm_max_tokens').value) || 4096,
+            context_window: parseInt(document.getElementById('cfg_llm_context_window').value) || 128000,
+            ollama: {
+                base_url: document.getElementById('cfg_ollama_base_url').value,
+                model: document.getElementById('cfg_ollama_model').value,
+            }
+        },
+        execution: {
+            default_timeout: parseInt(document.getElementById('cfg_exec_default_timeout').value) || 300,
+            max_timeout: parseInt(document.getElementById('cfg_exec_max_timeout').value) || 1800,
+            max_retries: parseInt(document.getElementById('cfg_exec_max_retries').value) || 3,
+            auto_approve_risk_levels: approveList,
+            max_consecutive_failures: parseInt(document.getElementById('cfg_exec_max_failures').value) || 3,
+            parallel_workers: parseInt(document.getElementById('cfg_exec_parallel').value) || 2,
+        },
+        security: {
+            blocked_commands: blockedList,
+            max_output_size: parseInt(document.getElementById('cfg_sec_max_output').value) || 1048576,
+            network_scope_enforcement: document.getElementById('cfg_sec_scope').value === 'true',
+        },
+        storage: {
+            database_path: document.getElementById('cfg_store_db').value,
+            projects_dir: document.getElementById('cfg_store_projects').value,
+            logs_dir: document.getElementById('cfg_store_logs').value,
+            reports_dir: document.getElementById('cfg_store_reports').value,
+        },
+        logging: {
+            level: document.getElementById('cfg_log_level').value,
+            file: document.getElementById('cfg_log_file').value,
+            console: document.getElementById('cfg_log_console').value === 'true',
+        }
+    };
+}
+
+async function testLlmConnection() {
+    const statusEl = document.getElementById('llmTestStatus');
+    const btn = document.getElementById('btnTestLlm');
+    statusEl.textContent = t('testingConnection');
+    statusEl.className = 'settings-inline-status is-pending';
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch('/api/config/test_llm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config: collectSettingsFormConfig() })
+        });
+        const data = await resp.json();
+        statusEl.textContent = data.message || (data.ok ? t('testSuccess') : t('testFailed'));
+        statusEl.className = 'settings-inline-status ' + (data.ok ? 'is-success' : 'is-error');
+        toast(statusEl.textContent, data.ok ? 'success' : 'error');
+    } catch (e) {
+        console.error(e);
+        statusEl.textContent = t('failedTestConfig');
+        statusEl.className = 'settings-inline-status is-error';
+        toast(t('failedTestConfig'), 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ── 系统监控轮询 ──
+let _prevNet = null;
+function refreshSystemStats() {
+    fetch('/api/system_stats').then(r => r.json()).then(d => {
+        // CPU
+        const cpuEl = document.getElementById('sysCpu');
+        const cpuBar = document.getElementById('sysCpuBar');
+        cpuEl.textContent = d.cpu_percent.toFixed(0) + '%';
+        cpuBar.style.width = d.cpu_percent + '%';
+        cpuBar.className = 'sys-bar-fill cpu-bar' + (d.cpu_percent > 80 ? ' hot' : d.cpu_percent > 50 ? ' warm' : '');
+
+        // MEM
+        document.getElementById('sysMem').innerHTML =
+            d.mem_percent.toFixed(0) + '% <small>' + d.mem_used_gb + '/' + d.mem_total_gb + 'G</small>';
+        const memBar = document.getElementById('sysMemBar');
+        memBar.style.width = d.mem_percent + '%';
+        memBar.className = 'sys-bar-fill mem-bar' + (d.mem_percent > 85 ? ' hot' : d.mem_percent > 60 ? ' warm' : '');
+
+        // NET (显示速率差值)
+        if (_prevNet) {
+            const dSent = d.net_sent_mb - _prevNet.sent;
+            const dRecv = d.net_recv_mb - _prevNet.recv;
+            const fmtRate = v => v < 1 ? (v * 1024).toFixed(0) + 'K' : v.toFixed(1) + 'M';
+            document.getElementById('sysNet').textContent =
+                '↑' + fmtRate(dSent > 0 ? dSent : 0) + '  ↓' + fmtRate(dRecv > 0 ? dRecv : 0);
+        }
+        _prevNet = { sent: d.net_sent_mb, recv: d.net_recv_mb };
+    }).catch(() => {});
+}
+refreshSystemStats();
+setInterval(refreshSystemStats, 3000);
+
+// ── 定时刷新 ──
+setInterval(refreshAll, 12000);
+
+// ── 启动 ──
+loadBgMode();
+connectSSE();
+applyLanguage('zh');
+if (!hasChartJs) {
+    toast('Chart.js 加载失败，图表已禁用，但项目/配置/扫描功能仍可使用。', 'error');
+}
+</script>
+</body>
+</html>

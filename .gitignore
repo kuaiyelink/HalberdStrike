@@ -1,0 +1,11 @@
+*.pyc
+__pycache__/
+*.db
+*.db-shm
+*.db-wal
+*.log
+data/projects/
+data/reports/
+.env
+config/config.local.yaml
+test_validator.py
