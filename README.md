@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐍 HalberdStrike
+# ⚔️ HalberdStrike
 
 ### LLM-Driven Automated Penetration Testing System
 
