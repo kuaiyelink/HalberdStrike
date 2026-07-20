@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import queue
 import threading
@@ -10,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from flask import Flask, Response, jsonify, render_template, request, send_file
+from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, session, url_for
 
 from src.utils.logger import get_logger
 
@@ -33,7 +34,7 @@ class WebDashboard:
     - 项目管理 (列表/创建/加载/删除/启动扫描)
     """
 
-    def __init__(self, orchestrator=None, host: str = "0.0.0.0", port: int = 5000,
+    def __init__(self, orchestrator=None, host: str = "localhost", port: int = 5000,
                  config_path: Optional[str] = None):
         self.orch = orchestrator
         self.host = host
@@ -77,37 +78,122 @@ class WebDashboard:
             static_folder=str(STATIC_DIR),
         )
         app.config["JSON_AS_ASCII"] = False
+        app.config["SECRET_KEY"] = "halberdstrike_web_secret_key_2026"
+
+        self._users = {
+            "admin": "e10adc3949ba59abbe56e057f20f883e"
+        }
+
+        def login_required(f):
+            def decorated(*args, **kwargs):
+                if not session.get('logged_in'):
+                    return redirect(url_for('login'))
+                return f(*args, **kwargs)
+            decorated.__name__ = f.__name__
+            return decorated
 
         # ── 页面路由 ──
 
+        @app.route("/login")
+        def login():
+            if session.get('logged_in'):
+                return redirect(url_for('index'))
+            return render_template("login.html")
+
         @app.route("/")
+        @login_required
         def index():
             return render_template("index.html")
+
+        # ── 登录 API ──
+
+        @app.route("/api/login", methods=["POST"])
+        def api_login():
+            data = request.get_json(silent=True) or {}
+            username = data.get("username", "").strip()
+            password = data.get("password", "").strip()
+
+            if not username or not password:
+                return jsonify({"ok": False, "message": "用户名或密码不能为空"})
+
+            stored_hash = self._users.get(username)
+            if stored_hash is None:
+                return jsonify({"ok": False, "message": "用户不存在"})
+
+            password_hash = hashlib.md5(password.encode()).hexdigest()
+            if password_hash != stored_hash:
+                return jsonify({"ok": False, "message": "密码错误"})
+
+            session['logged_in'] = True
+            session['username'] = username
+            logger.info(f"用户登录成功: {username}")
+            return jsonify({"ok": True, "message": "登录成功"})
+
+        @app.route("/api/logout", methods=["POST"])
+        def api_logout():
+            session.clear()
+            return jsonify({"ok": True, "message": "已登出"})
+
+        @app.route("/api/change_password", methods=["POST"])
+        @login_required
+        def api_change_password():
+            data = request.get_json(silent=True) or {}
+            logger.info(f"change_password received data: {data}")
+            old_password = data.get("current_password", "").strip() or data.get("old_password", "").strip()
+            new_password = data.get("new_password", "").strip()
+            logger.info(f"old_password: '{old_password}', new_password: '{new_password}'")
+
+            if not old_password or not new_password:
+                return jsonify({"ok": False, "message": "密码不能为空"})
+
+            if len(new_password) < 6:
+                return jsonify({"ok": False, "message": "新密码至少6位"})
+
+            username = session.get('username')
+            stored_hash = self._users.get(username)
+            old_hash = hashlib.md5(old_password.encode()).hexdigest()
+
+            if old_hash != stored_hash:
+                return jsonify({"ok": False, "message": "原密码错误"})
+
+            new_hash = hashlib.md5(new_password.encode()).hexdigest()
+            self._users[username] = new_hash
+            logger.info(f"用户修改密码成功: {username}")
+            return jsonify({"ok": True, "message": "密码修改成功"})
+
+        @app.route("/api/check_login")
+        def api_check_login():
+            return jsonify({"logged_in": session.get('logged_in', False)})
 
         # ── API 路由 ──
 
         @app.route("/api/status")
+        @login_required
         def api_status():
             """获取当前运行状态"""
             return jsonify(self._get_status())
 
         @app.route("/api/tree")
+        @login_required
         def api_tree():
             """获取 PTT 任务树"""
             return jsonify(self._get_tree_data())
 
         @app.route("/api/findings")
+        @login_required
         def api_findings():
             """获取发现列表"""
             return jsonify(self._get_findings())
 
         @app.route("/api/logs")
+        @login_required
         def api_logs():
             """获取操作日志"""
             limit = request.args.get("limit", 50, type=int)
             return jsonify(self._get_logs(limit))
 
         @app.route("/api/progress")
+        @login_required
         def api_progress():
             """获取进程进度"""
             from src.tools.progress import ProcessManager
@@ -115,21 +201,25 @@ class WebDashboard:
             return jsonify(mgr.get_dashboard())
 
         @app.route("/api/charts")
+        @login_required
         def api_charts():
             """获取图表数据"""
             return jsonify(self._get_chart_data())
 
         @app.route("/api/token_stats")
+        @login_required
         def api_token_stats():
             """获取 LLM Token 实时统计"""
             return jsonify(self._get_token_stats())
 
         @app.route("/api/system_stats")
+        @login_required
         def api_system_stats():
             """获取系统资源监控数据"""
             return jsonify(self._get_system_stats())
 
         @app.route("/api/control", methods=["POST"])
+        @login_required
         def api_control():
             """控制面板操作"""
             data = request.get_json(silent=True) or {}
@@ -139,27 +229,32 @@ class WebDashboard:
         # ── 项目管理 API ──
 
         @app.route("/api/projects")
+        @login_required
         def api_projects():
             """列出所有项目"""
             return jsonify(self._list_projects())
 
         @app.route("/api/projects", methods=["POST"])
+        @login_required
         def api_create_project():
             """创建新项目"""
             data = request.get_json(silent=True) or {}
             return jsonify(self._create_project(data))
 
         @app.route("/api/projects/<project_id>/load", methods=["POST"])
+        @login_required
         def api_load_project(project_id):
             """加载已有项目"""
             return jsonify(self._load_project(project_id))
 
         @app.route("/api/projects/<project_id>/delete", methods=["POST"])
+        @login_required
         def api_delete_project(project_id):
             """删除项目"""
             return jsonify(self._delete_project(project_id))
 
         @app.route("/api/projects/<project_id>/start", methods=["POST"])
+        @login_required
         def api_start_scan(project_id):
             """启动渗透测试"""
             data = request.get_json(silent=True) or {}
@@ -167,11 +262,13 @@ class WebDashboard:
             return jsonify(self._start_scan(project_id, max_iter))
 
         @app.route("/api/projects/<project_id>/report", methods=["POST"])
+        @login_required
         def api_generate_report(project_id):
             """生成渗透测试报告"""
             return jsonify(self._generate_report(project_id))
 
         @app.route("/api/download_report")
+        @login_required
         def api_download_report():
             """下载报告文件"""
             file_path = request.args.get("path", "")
@@ -185,6 +282,7 @@ class WebDashboard:
         # ── 报告列表 API ──
 
         @app.route("/api/reports")
+        @login_required
         def api_list_reports():
             """列出所有已生成的报告文件"""
             return jsonify(self._list_reports())
@@ -192,17 +290,20 @@ class WebDashboard:
         # ── 配置管理 API ──
 
         @app.route("/api/config")
+        @login_required
         def api_get_config():
             """读取当前配置"""
             return jsonify(self._get_config())
 
         @app.route("/api/config", methods=["POST"])
+        @login_required
         def api_save_config():
             """保存配置到 config.yaml"""
             data = request.get_json(silent=True) or {}
             return jsonify(self._save_config(data))
 
         @app.route("/api/config/test_llm", methods=["POST"])
+        @login_required
         def api_test_llm_config():
             """测试当前提交的 LLM 配置是否可用"""
             data = request.get_json(silent=True) or {}
@@ -211,6 +312,7 @@ class WebDashboard:
         # ── SSE 实时推送 ──
 
         @app.route("/api/events")
+        @login_required
         def api_events():
             """Server-Sent Events 实时推送"""
             def stream():
@@ -730,17 +832,26 @@ class WebDashboard:
                 return {"ok": False, "message": "API Key 不能为空"}
 
             provider = self.orch._create_provider_from_config(config)
-            reply = provider.chat(
-                [
-                    {"role": "system", "content": "你是 HalberdStrike 的连通性测试助手。"},
-                    {"role": "user", "content": "请仅回复 TEST_OK"},
-                ],
-                temperature=0,
-                max_tokens=16,
-            ).strip()
+            logger.info(f"[DEBUG] Provider 创建成功: {provider_name}, model={model}, base_url={base_url}")
+            
+            try:
+                raw_reply = provider.chat(
+                    [
+                        {"role": "system", "content": "你是 HalberdStrike 的连通性测试助手。"},
+                        {"role": "user", "content": "请仅回复 TEST_OK"},
+                    ],
+                    temperature=0,
+                    max_tokens=100,
+                )
+                logger.info(f"[DEBUG] 原始响应: {repr(raw_reply)}")
+                reply = raw_reply.strip()
+                logger.info(f"[DEBUG] 处理后响应: {repr(reply)}")
 
-            if not reply:
-                return {"ok": False, "message": "LLM 未返回内容"}
+                if not reply:
+                    return {"ok": False, "message": "LLM 未返回内容"}
+            except Exception as chat_e:
+                logger.error(f"[DEBUG] 聊天请求失败: {chat_e}", exc_info=True)
+                raise
 
             return {
                 "ok": True,
@@ -812,7 +923,7 @@ class WebDashboard:
         )
         self._server_thread.start()
 
-        if not self._server_ready.wait(timeout=3):
+        if not self._server_ready.wait(timeout=10):
             raise RuntimeError(f"Web 服务启动超时: http://{self.host}:{self.port}")
         if self._server_error:
             raise RuntimeError(f"Web 服务启动失败: {self._server_error}") from self._server_error
@@ -826,17 +937,29 @@ class WebDashboard:
 
     def _run_server(self):
         """运行 Flask 服务"""
-        from werkzeug.serving import make_server
+        logger.info(f"[DEBUG] 开始创建 Web 服务器: {self.host}:{self.port}")
         try:
+            from werkzeug.serving import make_server
+            logger.info("[DEBUG] werkzeug.serving.make_server 导入成功")
             self._werkzeug_server = make_server(
                 self.host, self.port, self._app, threaded=True
             )
+            logger.info(f"[DEBUG] Web 服务器创建成功: {self.host}:{self.port}")
             self._server_ready.set()
+            logger.info("[DEBUG] _server_ready 事件已设置")
             self._werkzeug_server.serve_forever()
-        except Exception as e:
+        except ImportError as e:
+            logger.error(f"[DEBUG] 导入错误: {e}", exc_info=True)
             self._server_error = e
             self._server_ready.set()
-            logger.error(f"Web 服务线程异常: {e}", exc_info=True)
+        except OSError as e:
+            logger.error(f"[DEBUG] 网络错误: {e}", exc_info=True)
+            self._server_error = e
+            self._server_ready.set()
+        except Exception as e:
+            logger.error(f"[DEBUG] Web 服务线程异常: {e}", exc_info=True)
+            self._server_error = e
+            self._server_ready.set()
 
     def stop(self):
         """停止 Web 服务"""

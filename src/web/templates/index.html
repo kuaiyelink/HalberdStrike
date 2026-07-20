@@ -23,7 +23,7 @@
             <span id="brandTitle">HALBERDSTRIKE</span>
             <span class="brand-subtitle" data-i18n-zh="网络攻防指挥中心" data-i18n-en="OFFENSIVE SECURITY COMMAND">网络攻防指挥中心</span>
         </div>
-        <a href="https://github.com" target="_blank" rel="noopener" style="color:var(--accent-cyan);font-size:10px;margin-left:8px;opacity:0.7;text-decoration:none;letter-spacing:0.5px;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">GitHub</a>
+        <a href="https://github.com/kuaiyelink/HalberdStrike" target="_blank" rel="noopener" style="color:var(--accent-cyan);font-size:10px;margin-left:8px;opacity:0.7;text-decoration:none;letter-spacing:0.5px;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">GitHub</a>
     </div>
     <div class="navbar-center">
         <span class="nav-chip nav-chip-live" data-i18n-zh="在线" data-i18n-en="LIVE">在线</span>
@@ -51,6 +51,12 @@
     <div class="navbar-status">
         <button type="button" class="btn" id="bgModeBtn" onclick="cycleBgMode()" style="margin-right:8px;padding:6px 10px;min-width:88px" title="切换背景主题" data-i18n-title-zh="切换背景主题" data-i18n-title-en="Background theme">背景</button>
         <button class="btn" id="langToggleBtn" onclick="toggleLanguage()" style="margin-right:8px;padding:6px 10px;min-width:72px">中文</button>
+        <button type="button" class="btn btn-about" id="aboutBtn" onclick="toggleAboutModal()" style="margin-right:8px;padding:6px" title="关于" data-i18n-title-zh="关于" data-i18n-title-en="About">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+        <button type="button" class="btn btn-about" id="changePwdBtn" onclick="toggleChangePwdModal()" style="margin-right:8px;padding:6px" title="修改密码" data-i18n-title-zh="修改密码" data-i18n-title-en="Change Password">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
         <span id="statusBadge" class="status-badge stopped">OFFLINE</span>
         <div id="connectionDot" class="connection-dot disconnected" title="SSE 连接" data-i18n-title-zh="SSE 连接" data-i18n-title-en="SSE"></div>
     </div>
@@ -362,6 +368,11 @@
                         <label data-i18n-zh="提供商" data-i18n-en="Provider">提供商</label>
                         <select id="cfg_llm_provider">
                             <option value="openai" data-i18n-zh="OpenAI（兼容接口）" data-i18n-en="OpenAI (Compatible)">OpenAI（兼容接口）</option>
+                            <option value="deepseek" data-i18n-zh="DeepSeek" data-i18n-en="DeepSeek">DeepSeek</option>
+                            <option value="zhipu" data-i18n-zh="智谱 GLM" data-i18n-en="Zhipu GLM">智谱 GLM</option>
+                            <option value="tencent" data-i18n-zh="腾讯混元" data-i18n-en="Tencent Hunyuan">腾讯混元</option>
+                            <option value="aliyun" data-i18n-zh="阿里通义千问" data-i18n-en="Alibaba Qwen">阿里通义千问</option>
+                            <option value="baidu" data-i18n-zh="百度文心一言" data-i18n-en="Baidu Wenxin">百度文心一言</option>
                             <option value="ollama" data-i18n-zh="Ollama（本地）" data-i18n-en="Ollama (Local)">Ollama（本地）</option>
                         </select>
                     </div>
@@ -1574,6 +1585,8 @@ async function loadSettings() {
         document.getElementById('cfg_ollama_base_url').value = ollama.base_url || 'http://localhost:11434';
         document.getElementById('cfg_ollama_model').value = ollama.model || '';
 
+        setupProviderChangeHandler();
+
         // Execution
         document.getElementById('cfg_exec_default_timeout').value = exec.default_timeout ?? 300;
         document.getElementById('cfg_exec_max_timeout').value = exec.max_timeout ?? 1800;
@@ -1684,6 +1697,49 @@ function collectSettingsFormConfig() {
     };
 }
 
+const PROVIDER_CONFIGS = {
+    openai: {
+        model: 'gpt-4o',
+        base_url: 'https://api.openai.com/v1'
+    },
+    deepseek: {
+        model: 'deepseek-v4-pro',
+        base_url: 'https://api.deepseek.com/v1'
+    },
+    zhipu: {
+        model: 'glm-4.7-flash',
+        base_url: 'https://open.bigmodel.cn/api/paas/v4/'
+    },
+    tencent: {
+        model: 'hunyuan-4.0-plus',
+        base_url: 'https://hunyuan.tencentcloudapi.com/v1/agent/completions'
+    },
+    aliyun: {
+        model: 'qwen3-plus',
+        base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+    },
+    baidu: {
+        model: 'ernie-4.0-turbo',
+        base_url: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-turbo'
+    },
+    ollama: {
+        model: 'qwen2.5:32b',
+        base_url: 'http://localhost:11434/v1'
+    }
+};
+
+function setupProviderChangeHandler() {
+    const providerSelect = document.getElementById('cfg_llm_provider');
+    providerSelect.addEventListener('change', function() {
+        const provider = this.value;
+        const config = PROVIDER_CONFIGS[provider];
+        if (config) {
+            document.getElementById('cfg_llm_model').value = config.model;
+            document.getElementById('cfg_llm_base_url').value = config.base_url;
+        }
+    });
+}
+
 async function testLlmConnection() {
     const statusEl = document.getElementById('llmTestStatus');
     const btn = document.getElementById('btnTestLlm');
@@ -1752,6 +1808,188 @@ connectSSE();
 applyLanguage('zh');
 if (!hasChartJs) {
     toast('Chart.js 加载失败，图表已禁用，但项目/配置/扫描功能仍可使用。', 'error');
+}
+
+// ── 关于弹窗 ──
+const aboutModal = document.createElement('div');
+aboutModal.id = 'aboutModal';
+aboutModal.className = 'modal-overlay';
+aboutModal.style.display = 'none';
+aboutModal.innerHTML = `
+    <div class="modal-content about-modal">
+        <div class="hud-corner hud-corner-tl"></div>
+        <div class="hud-corner hud-corner-tr"></div>
+        <div class="hud-corner hud-corner-bl"></div>
+        <div class="hud-corner hud-corner-br"></div>
+        <div class="modal-header">
+            <div class="modal-title">
+                <span style="font-size:24px;margin-right:8px;">⚔️</span>
+                <span>关于 HalberdStrike</span>
+            </div>
+            <button class="modal-close" onclick="toggleAboutModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="about-info">
+                <div class="about-row">
+                    <span class="about-label">软件名称</span>
+                    <span class="about-value">HalberdStrike</span>
+                </div>
+                <div class="about-row">
+                    <span class="about-label">版本</span>
+                    <span class="about-value">v1.0</span>
+                </div>
+                <div class="about-row">
+                    <span class="about-label">开发者</span>
+                    <span class="about-value">佚名实验室</span>
+                </div>
+                <div class="about-row">
+                    <span class="about-label">开发单位</span>
+                    <a href="https://www.ky.link" target="_blank" class="about-link">快页信息技术有限公司</a>
+                </div>
+            </div>
+            <div class="about-footer">
+                <p>基于 PenTestGPT 思想，由大语言模型驱动的端到端自动化渗透测试系统</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="toggleAboutModal()">关闭</button>
+        </div>
+    </div>
+`;
+document.body.appendChild(aboutModal);
+
+function toggleAboutModal() {
+    if (aboutModal.classList.contains('show')) {
+        aboutModal.classList.remove('show');
+        setTimeout(() => aboutModal.style.display = 'none', 300);
+    } else {
+        aboutModal.style.display = 'flex';
+        setTimeout(() => aboutModal.classList.add('show'), 10);
+    }
+}
+
+aboutModal.addEventListener('click', (e) => {
+    if (e.target === aboutModal) toggleAboutModal();
+});
+
+// ── 修改密码弹窗 ──
+const changePwdModal = document.createElement('div');
+changePwdModal.id = 'changePwdModal';
+changePwdModal.className = 'modal-overlay';
+changePwdModal.style.display = 'none';
+changePwdModal.innerHTML = `
+    <div class="modal-content change-pwd-modal">
+        <div class="hud-corner hud-corner-tl"></div>
+        <div class="hud-corner hud-corner-tr"></div>
+        <div class="hud-corner hud-corner-bl"></div>
+        <div class="hud-corner hud-corner-br"></div>
+        <div class="modal-header">
+            <div class="modal-title">
+                <span style="font-size:20px;margin-right:8px;">🔐</span>
+                <span>修改密码</span>
+            </div>
+            <button class="modal-close" onclick="toggleChangePwdModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">当前密码</label>
+                <input type="password" class="form-input" id="currentPwd" placeholder="请输入当前密码">
+                <div class="error-message" id="currentPwdError"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">新密码</label>
+                <input type="password" class="form-input" id="newPwd" placeholder="请输入新密码">
+                <div class="error-message" id="newPwdError"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">确认新密码</label>
+                <input type="password" class="form-input" id="confirmPwd" placeholder="请再次输入新密码">
+                <div class="error-message" id="confirmPwdError"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="toggleChangePwdModal()">取消</button>
+            <button class="btn btn-primary" onclick="changePassword()">确认修改</button>
+        </div>
+    </div>
+`;
+document.body.appendChild(changePwdModal);
+
+function toggleChangePwdModal() {
+    if (changePwdModal.classList.contains('show')) {
+        changePwdModal.classList.remove('show');
+        setTimeout(() => changePwdModal.style.display = 'none', 300);
+    } else {
+        changePwdModal.style.display = 'flex';
+        document.getElementById('currentPwd').value = '';
+        document.getElementById('newPwd').value = '';
+        document.getElementById('confirmPwd').value = '';
+        document.getElementById('currentPwdError').classList.remove('show');
+        document.getElementById('newPwdError').classList.remove('show');
+        document.getElementById('confirmPwdError').classList.remove('show');
+        setTimeout(() => changePwdModal.classList.add('show'), 10);
+    }
+}
+
+changePwdModal.addEventListener('click', (e) => {
+    if (e.target === changePwdModal) toggleChangePwdModal();
+});
+
+async function changePassword() {
+    const currentPwd = document.getElementById('currentPwd').value.trim();
+    const newPwd = document.getElementById('newPwd').value.trim();
+    const confirmPwd = document.getElementById('confirmPwd').value.trim();
+    
+    document.getElementById('currentPwdError').classList.remove('show');
+    document.getElementById('newPwdError').classList.remove('show');
+    document.getElementById('confirmPwdError').classList.remove('show');
+    
+    if (!currentPwd) {
+        document.getElementById('currentPwdError').textContent = '请输入当前密码';
+        document.getElementById('currentPwdError').classList.add('show');
+        return;
+    }
+    
+    if (!newPwd) {
+        document.getElementById('newPwdError').textContent = '请输入新密码';
+        document.getElementById('newPwdError').classList.add('show');
+        return;
+    }
+    
+    if (newPwd.length < 6) {
+        document.getElementById('newPwdError').textContent = '新密码长度至少为6位';
+        document.getElementById('newPwdError').classList.add('show');
+        return;
+    }
+    
+    if (newPwd !== confirmPwd) {
+        document.getElementById('confirmPwdError').textContent = '两次输入的密码不一致';
+        document.getElementById('confirmPwdError').classList.add('show');
+        return;
+    }
+    
+    try {
+        const resp = await fetch('/api/change_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: currentPwd, new_password: newPwd })
+        });
+        const data = await resp.json();
+        
+        if (data.ok) {
+            toast('密码修改成功！', 'success');
+            toggleChangePwdModal();
+        } else {
+            document.getElementById('currentPwdError').textContent = data.message || '修改失败';
+            document.getElementById('currentPwdError').classList.add('show');
+        }
+    } catch (err) {
+        toast('网络请求失败，请重试', 'error');
+    }
 }
 </script>
 </body>

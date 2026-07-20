@@ -1966,3 +1966,212 @@ body[data-bg-mode="aurora"] {
 body[data-bg-mode="aurora"]::before {
     opacity: 0.55;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Modal Styles
+   ══════════════════════════════════════════════════════════ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show, .modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    box-shadow: var(--shadow-panel);
+    transform: scale(0.95) translateY(20px);
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(94, 234, 255, 0.03);
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--accent-cyan);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    gap: 12px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   About Modal Styles
+   ══════════════════════════════════════════════════════════ */
+
+.about-modal .modal-header {
+    background: linear-gradient(135deg, rgba(94, 234, 255, 0.08), rgba(159, 123, 255, 0.06));
+    border-bottom-color: rgba(94, 234, 255, 0.15);
+}
+
+.about-info {
+    background: rgba(94, 234, 255, 0.03);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.about-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.about-row:last-child {
+    border-bottom: none;
+}
+
+.about-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.about-value {
+    font-size: 13px;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+}
+
+.about-link {
+    font-size: 13px;
+    color: var(--accent-cyan);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    transition: color 0.2s ease;
+}
+
+.about-link:hover {
+    color: var(--text-bright);
+    text-decoration: underline;
+}
+
+.about-footer {
+    text-align: center;
+}
+
+.about-footer p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+.btn-about {
+    min-width: auto !important;
+    padding: 6px !important;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.btn-about:hover {
+    opacity: 1;
+    color: var(--accent-cyan) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Change Password Modal Styles
+   ══════════════════════════════════════════════════════════ */
+
+.change-pwd-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.change-pwd-modal .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.change-pwd-modal .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.change-pwd-modal .form-input:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--glow-cyan);
+}
+
+.change-pwd-modal .form-input::placeholder {
+    color: var(--text-dim);
+}
+
+.change-pwd-modal .error-message {
+    color: var(--accent-red);
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+}
+
+.change-pwd-modal .error-message.show {
+    display: block;
+}

@@ -42,7 +42,7 @@ BANNER = r"""
  |_|  |_|\__,_|_|_.__/ \___|_|  \__,_|_____/ \__|_|  |_|_|\_\___|
                                                                  
   HalberdStrike v1.0
-  https://github.com
+  https://github.com/kuaiyelink/HalberdStrike
 """
 
 
@@ -485,7 +485,7 @@ def _interactive_generate_report(orch: Orchestrator):
 
 @cli.command()
 @click.option("--port", "-p", default=5000, help="Web 仪表盘端口 (默认 5000)")
-@click.option("--host", "-H", default="0.0.0.0", help="监听地址 (默认 0.0.0.0)")
+@click.option("--host", "-H", default="localhost", help="监听地址 (默认 localhost)")
 @click.option("--config", "-c", default=None, help="配置文件路径")
 def web(port: int, host: str, config: str):
     """启动独立 Web 仪表盘（支持项目管理与扫描控制）"""
@@ -525,7 +525,7 @@ def _start_web_dashboard(orch, port: int = 5000):
     """启动 Web 仪表盘服务"""
     try:
         from src.web.dashboard import WebDashboard
-        dashboard = WebDashboard(orch, host="0.0.0.0", port=port)
+        dashboard = WebDashboard(orch, host="localhost", port=port)
         dashboard.start()
         console.print(f"[bold green][OK] Web 仪表盘已启动: http://localhost:{port}[/bold green]")
         return dashboard

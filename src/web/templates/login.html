@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HalberdStrike - 登录</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-tertiary: #181820;
+            --accent-cyan: #00cccc;
+            --accent-green: #00ff88;
+            --accent-purple: #aa55ff;
+            --text-primary: #e0e0e8;
+            --text-secondary: #808090;
+            --border-color: #2a2a3a;
+            --glow-cyan: rgba(0, 204, 204, 0.3);
+            --glow-green: rgba(0, 255, 136, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .cyber-bg {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 204, 204, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(170, 85, 255, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            z-index: 0;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 204, 204, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 204, 204, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        .scanline {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(0, 204, 204, 0.02) 50%,
+                transparent 100%
+            );
+            background-size: 100% 4px;
+            animation: scan 8s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            padding: 48px;
+            background: rgba(17, 17, 24, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 0 60px rgba(0, 204, 204, 0.1),
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px var(--glow-cyan);
+            font-size: 28px;
+        }
+
+        .login-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px var(--glow-cyan), inset 0 0 20px rgba(0, 204, 204, 0.05);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .form-input.error {
+            border-color: #ff5555;
+            box-shadow: 0 0 0 3px rgba(255, 85, 85, 0.3);
+        }
+
+        .error-message {
+            color: #ff5555;
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), #00aaaa);
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-primary);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--glow-cyan);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .login-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            border-top-color: var(--bg-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .footer-text span {
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: var(--accent-cyan);
+            border-style: solid;
+            border-width: 0;
+            opacity: 0.5;
+        }
+
+        .hud-corner-tl {
+            top: -1px;
+            left: -1px;
+            border-top-width: 2px;
+            border-left-width: 2px;
+        }
+
+        .hud-corner-tr {
+            top: -1px;
+            right: -1px;
+            border-top-width: 2px;
+            border-right-width: 2px;
+        }
+
+        .hud-corner-bl {
+            bottom: -1px;
+            left: -1px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
+        }
+
+        .hud-corner-br {
+            bottom: -1px;
+            right: -1px;
+            border-bottom-width: 2px;
+            border-right-width: 2px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div class="grid-overlay"></div>
+    <div class="scanline"></div>
+
+    <div class="login-container fade-in">
+        <div class="hud-corner hud-corner-tl"></div>
+        <div class="hud-corner hud-corner-tr"></div>
+        <div class="hud-corner hud-corner-bl"></div>
+        <div class="hud-corner hud-corner-br"></div>
+
+        <div class="login-header">
+            <div class="logo-icon">⚔️</div>
+            <div class="login-title">HALBERDSTRIKE</div>
+            <div class="login-subtitle">网络攻防指挥中心</div>
+        </div>
+
+        <form id="loginForm" onsubmit="return false;">
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" id="username" class="form-input" placeholder="请输入用户名" value="admin" autofocus>
+                <div class="error-message" id="errorUsername">用户名不能为空</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" id="password" class="form-input" placeholder="请输入密码" value="123456">
+                <div class="error-message" id="errorPassword">密码不能为空</div>
+            </div>
+
+            <button type="submit" id="loginBtn" class="login-btn">登 录</button>
+            <div class="error-message" id="errorLogin" style="text-align: center; margin-top: 12px;"></div>
+        </form>
+
+        <div class="login-footer">
+            <div class="footer-text">默认账号: <span>admin</span> / 默认密码: <span>123456</span></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorLogin = document.getElementById('errorLogin');
+
+        function showError(el, msg) {
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function hideError(el) {
+            el.classList.remove('show');
+        }
+
+        async function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            hideError(document.getElementById('errorUsername'));
+            hideError(document.getElementById('errorPassword'));
+            hideError(errorLogin);
+
+            if (!username) {
+                showError(document.getElementById('errorUsername'), '用户名不能为空');
+                usernameInput.classList.add('error');
+                return;
+            }
+            usernameInput.classList.remove('error');
+
+            if (!password) {
+                showError(document.getElementById('errorPassword'), '密码不能为空');
+                passwordInput.classList.add('error');
+                return;
+            }
+            passwordInput.classList.remove('error');
+
+            loginBtn.classList.add('loading');
+            loginBtn.textContent = '登 录 中...';
+
+            try {
+                const resp = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await resp.json();
+
+                if (data.ok) {
+                    window.location.href = '/';
+                } else {
+                    showError(errorLogin, data.message || '登录失败');
+                }
+            } catch (e) {
+                showError(errorLogin, '网络连接失败');
+                console.error(e);
+            } finally {
+                loginBtn.classList.remove('loading');
+                loginBtn.textContent = '登 录';
+            }
+        }
+
+        form.addEventListener('submit', handleLogin);
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') passwordInput.focus();
+        });
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    </script>
+</body>
+</html>

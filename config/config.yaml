@@ -1,8 +1,8 @@
 llm:
   provider: openai
-  api_key: sk-5fe418c73a9347c6b8194c94c6d48989
-  base_url: https://api.deepseek.com/v1
-  model: deepseek-v4-pro
+  api_key: eb398ee5375e47e2a3de2ff5ac0e2db2.BkVvoWQNPIm0CnnU
+  base_url: https://open.bigmodel.cn/api/paas/v4/
+  model: glm-4.7-flash
   temperature: 0.3
   max_tokens: 4096
   context_window: 128000
